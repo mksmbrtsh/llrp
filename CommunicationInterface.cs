@@ -19,28 +19,16 @@ namespace Org.LLRP.LTK.LLRPV1
 
     protected void TriggerMessageEvent(short ver, short msg_type, int msg_id, byte[] data)
     {
-      try
-      {
         if (this.OnFrameReceived == null)
           return;
         this.OnFrameReceived(ver, msg_type, msg_id, data);
-      }
-      catch
-      {
-      }
     }
 
     public void TriggerOnClientConnect()
     {
-      try
-      {
         if (this.OnClientConnected == null)
           return;
         this.OnClientConnected();
-      }
-      catch
-      {
-      }
     }
 
     public virtual bool Open(string device_name, int port) => false;
