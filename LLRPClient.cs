@@ -11,108 +11,114 @@ using System.Threading;
 
 namespace Org.LLRP.LTK.LLRPV1
 {
-  [Serializable]
-  public class LLRPClient : IDisposable
-  {
-    private CommunicationInterface cI;
-    private int LLRP_TCP_PORT = 5084;
-    private int MSG_TIME_OUT = 10000;
-    private Thread notificationThread;
-    private BlockingQueue notificationQueue;
-    private ManualResetEvent conn_evt;
-    private ENUM_ConnectionAttemptStatusType conn_status_type;
-    private string reader_name;
-    private bool connected;
-
-    public event delegateReaderEventNotification OnReaderEventNotification;
-
-    public event delegateRoAccessReport OnRoAccessReportReceived;
-
-    public event delegateKeepAlive OnKeepAlive;
-
-    public event delegateEncapReaderEventNotification OnEncapedReaderEventNotification;
-
-    public event delegateEncapRoAccessReport OnEncapedRoAccessReportReceived;
-
-    public event delegateEncapKeepAlive OnEncapedKeepAlive;
-
-    protected void TriggerReaderEventNotification(MSG_READER_EVENT_NOTIFICATION msg)
+    [Serializable]
+    public class LLRPClient : IDisposable
     {
-      try
-      {
-        if (this.OnReaderEventNotification != null)
-          this.OnReaderEventNotification(msg);
-        if (this.OnEncapedReaderEventNotification == null)
-          return;
-        ENCAPED_READER_EVENT_NOTIFICATION eventNotification = new ENCAPED_READER_EVENT_NOTIFICATION();
-        eventNotification.reader = this.reader_name;
-        eventNotification.ntf = msg;
-      }
-      catch
-      {
-      }
-    }
+        private CommunicationInterface cI;
+        private int LLRP_TCP_PORT = 5084;
+        private int MSG_TIME_OUT = 10000;
+        private Thread notificationThread;
+        private BlockingQueue notificationQueue;
+        private ManualResetEvent conn_evt;
+        private ENUM_ConnectionAttemptStatusType conn_status_type;
+        private string reader_name;
+        private bool connected;
 
-    protected void TriggerRoAccessReport(MSG_RO_ACCESS_REPORT msg)
-    {
-      try
-      {
-        if (this.OnRoAccessReportReceived != null)
-          this.OnRoAccessReportReceived(msg);
-        if (this.OnEncapedRoAccessReportReceived == null)
-          return;
-        this.OnEncapedRoAccessReportReceived(new ENCAPED_RO_ACCESS_REPORT()
+        public event delegateReaderEventNotification OnReaderEventNotification;
+
+        public event delegateRoAccessReport OnRoAccessReportReceived;
+
+        public event delegateKeepAlive OnKeepAlive;
+
+        public event delegateEncapReaderEventNotification OnEncapedReaderEventNotification;
+
+        public event delegateEncapRoAccessReport OnEncapedRoAccessReportReceived;
+
+        public event delegateEncapKeepAlive OnEncapedKeepAlive;
+
+        protected void TriggerReaderEventNotification(MSG_READER_EVENT_NOTIFICATION msg)
         {
-          reader = this.reader_name,
-          report = msg
-        });
-      }
-      catch
-      {
-      }
-    }
+            try
+            {
+                if (this.OnReaderEventNotification != null)
+                    this.OnReaderEventNotification(msg);
+                if (this.OnEncapedReaderEventNotification == null)
+                    return;
+                ENCAPED_READER_EVENT_NOTIFICATION eventNotification = new ENCAPED_READER_EVENT_NOTIFICATION();
+                eventNotification.reader = this.reader_name;
+                eventNotification.ntf = msg;
+            }
+            catch
+            {
+            }
+        }
 
-    protected void TriggerKeepAlive(MSG_KEEPALIVE msg)
-    {
-      try
-      {
-        if (this.OnKeepAlive != null)
-          this.OnKeepAlive(msg);
-        if (this.OnEncapedKeepAlive == null)
-          return;
-        this.OnEncapedKeepAlive(new ENCAPED_KEEP_ALIVE()
+        protected void TriggerRoAccessReport(MSG_RO_ACCESS_REPORT msg)
         {
-          reader = this.reader_name,
-          keep_alive = msg
-        });
-      }
-      catch
-      {
-      }
-    }
+            try
+            {
+                if (this.OnRoAccessReportReceived != null)
+                    this.OnRoAccessReportReceived(msg);
+                if (this.OnEncapedRoAccessReportReceived == null)
+                    return;
+                this.OnEncapedRoAccessReportReceived(new ENCAPED_RO_ACCESS_REPORT()
+                {
+                    reader = this.reader_name,
+                    report = msg
+                });
+            }
+            catch
+            {
+            }
+        }
 
-    public string ReaderName => this.reader_name;
+        protected void TriggerKeepAlive(MSG_KEEPALIVE msg)
+        {
+            try
+            {
+                if (this.OnKeepAlive != null)
+                    this.OnKeepAlive(msg);
+                if (this.OnEncapedKeepAlive == null)
+                    return;
+                this.OnEncapedKeepAlive(new ENCAPED_KEEP_ALIVE()
+                {
+                    reader = this.reader_name,
+                    keep_alive = msg
+                });
+            }
+            catch
+            {
+            }
+        }
 
-    public bool IsConnected => this.connected;
+        public string ReaderName => this.reader_name;
 
-    public void SetMessageTimeOut(int time_out) => this.MSG_TIME_OUT = time_out;
+        public bool IsConnected => this.connected;
 
-    public int GetMessageTimeOut() => this.MSG_TIME_OUT;
+        public void SetMessageTimeOut(int time_out) => this.MSG_TIME_OUT = time_out;
 
-    public LLRPClient()
-    {
-      this.cI = (CommunicationInterface) new TCPIPClient();
-      this.notificationQueue = new BlockingQueue();
-      this.notificationThread = new Thread(new ThreadStart(this.ProcessNotificationQueue));
-      this.notificationThread.IsBackground = true;
-      this.notificationThread.Start();
-    }
+        public int GetMessageTimeOut() => this.MSG_TIME_OUT;
 
-    public LLRPClient(int port)
-    {
-      this.LLRP_TCP_PORT = port;
-      this.cI = (CommunicationInterface) new TCPIPClient();
-    }
+        public LLRPClient()
+        {
+            this.cI = (CommunicationInterface)new TCPIPClient();
+            init();
+        }
+
+        public LLRPClient(int port)
+        {
+            this.LLRP_TCP_PORT = port;
+            this.cI = (CommunicationInterface) new TCPIPClient();
+            init();
+        }
+
+        private void init()
+        {
+            this.notificationQueue = new BlockingQueue();
+            this.notificationThread = new Thread(new ThreadStart(this.ProcessNotificationQueue));
+            this.notificationThread.IsBackground = true;
+            this.notificationThread.Start();
+        }
 
     private void ProcessNotificationQueue()
     {
